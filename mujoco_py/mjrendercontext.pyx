@@ -93,7 +93,17 @@ cdef class MjRenderContext(object):
         else:
             if device_id < 0:
                 device_id = int(os.getenv('CUDA_VISIBLE_DEVICES', '0').split(',')[0])
-            self._opengl_context = OffscreenOpenGLContext(device_id)
+
+            # FIXME: Need this because torque isolation can fail, so rotate thru GPUs until OK
+            scanned = False
+            while not scanned:
+                try:
+                    self._opengl_context = OffscreenOpenGLContext(device_id)
+                    print('Choosing device ID: ', device_id)
+                    scanned = True
+                    break
+                except RuntimeError, e:
+                    device_id += 1
 
     def _init_camera(self, sim):
         # Make the free camera look at the scene
